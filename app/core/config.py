@@ -1,8 +1,8 @@
 """Configuration module for application settings using Pydantic."""
 
-import os
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -11,26 +11,24 @@ class Settings(BaseSettings):
     Pydantic will automatically look for matching environment variables.
     """
     openai_api_key: str
+    model_name: str = "gpt-4o"
 
     verbose: Optional[bool] = False
 
     model_config = SettingsConfigDict(env_file=".env")
 
 
-# Only initialize settings if we're not in a documentation build context
-_settings = None
-
 def get_settings() -> Settings:
-    """Get settings instance, initializing if needed."""
-    global _settings
-    if _settings is None:
-        # During docs build or when no env vars are available, use a mock settings object
-        try:
-            _settings = Settings()
-        except Exception:
-            # Create a mock settings object for docs or when env vars are missing
-            class MockSettings:
-                openai_api_key = "dummy_key_for_docs"
-                verbose = False
-            _settings = MockSettings()
-    return _settings
+    """Get settings instance."""
+    try:
+        return Settings()
+    except (ValueError, TypeError):
+        # Create a mock settings object for docs
+        # or when env vars are missing
+        class MockSettings:  # pylint: disable=too-few-public-methods
+            """Mock settings for documentation builds."""
+            openai_api_key = "dummy_key_for_docs"
+            model_name = "gpt-4o"
+            verbose = False
+
+        return MockSettings()

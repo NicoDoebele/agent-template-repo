@@ -1,7 +1,5 @@
 """Search API endpoints for the agent-template-repo application."""
 
-from typing import Optional
-
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -14,11 +12,9 @@ class SearchRequest(BaseModel):
     """Request model for search operations.
     
     Attributes:
-        query: The search query string.
-        max_results: Maximum number of results to return (default: 10).
+        query: The query string.
     """
     query: str
-    max_results: Optional[int] = 10
 
 
 class SearchResponse(BaseModel):

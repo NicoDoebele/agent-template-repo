@@ -1,15 +1,59 @@
-from langchain.tools import Tool
+"""Search agent tools for web search and content scraping.
+
+This module provides tools for the search agent to perform web searches and scrape
+website content. It includes functions for searching the web using DuckDuckGo
+and scraping text content from websites.
+
+The tools are designed to be used with LangChain's tool decorator and provide
+formatted, clean output suitable for AI agent consumption.
+
+Example:
+    >>> from app.agents.search_agent.tools import search_web, scrape_website
+    >>> results = search_web("Python programming", 3)
+    >>> content = scrape_website("https://example.com")
+"""
+
+from langchain_core.tools import tool
 from ddgs import DDGS
 import requests
 from bs4 import BeautifulSoup
-import re
 
 
-def search_web(query: str) -> str:
-    """Search the web using DuckDuckGo and return results as text."""
+@tool
+def search_web(query: str, max_results: int = 5) -> str:
+    """Search the web using DuckDuckGo and return results as text.
+    
+    This function performs a web search using DuckDuckGo's search API and formats
+    the results into a readable text format. Each result includes the title,
+    description, and URL.
+    
+    Args:
+        query: The search query string to look up on the web.
+        max_results: Maximum number of search results to return. Defaults to 5.
+        
+    Returns:
+        A formatted string containing search results with titles, descriptions, and URLs.
+        Each result is numbered and includes the title, body text, and link.
+        If no results are found, returns "No search results found."
+        If an error occurs, returns an error message.
+        
+    Raises:
+        Exception: If the search operation fails due to network issues or API errors.
+        
+    Example:
+        >>> result = search_web("Python programming", 3)
+        >>> print(result)
+        1. Python Programming Language
+        Learn Python programming with tutorials and examples...
+        URL: https://python.org
+        
+        2. Python Tutorial
+        Comprehensive guide to Python programming...
+        URL: https://docs.python.org
+    """
     try:
         with DDGS() as ddgs_instance:
-            results = list(ddgs_instance.text(query, max_results=5))
+            results = list(ddgs_instance.text(query, max_results=max_results))
             if not results:
                 return "No search results found."
 
@@ -26,8 +70,34 @@ def search_web(query: str) -> str:
         return f"Search failed: {str(e)}"
 
 
+@tool
 def scrape_website(url: str) -> str:
-    """Scrape content from a website URL."""
+    """Scrape content from a website URL.
+    
+    This function fetches a webpage, parses its HTML content, and extracts
+    clean text while removing scripts, styles, and other non-content elements.
+    The content is limited to 2000 characters to avoid token limits.
+    
+    Args:
+        url: The URL of the website to scrape. If the URL starts with "URL: ",
+             this prefix will be automatically removed.
+             
+    Returns:
+        A string containing the scraped text content from the website.
+        The content is cleaned of HTML tags, scripts, and styles.
+        Limited to 2000 characters to avoid token limits.
+        If an error occurs, returns an error message.
+        
+    Raises:
+        requests.RequestException: If the HTTP request fails (timeout, connection error, etc.)
+        Exception: For other scraping-related errors.
+        
+    Example:
+        >>> content = scrape_website("https://example.com")
+        >>> print(content[:100])
+        Example Domain
+        This domain is for use in illustrative examples...
+    """
     try:
         # Clean the URL input - remove "URL: " prefix if present
         if url.startswith("URL: "):
@@ -62,15 +132,5 @@ def scrape_website(url: str) -> str:
         return f"Failed to scrape website: {str(e)}"
 
 
-search_agent_tools = [
-    Tool(
-        name="Search",
-        func=search_web,
-        description=
-        "Search the web for information using DuckDuckGo. Input should be a search query."
-    ),
-    Tool(name="ScrapeWebsite",
-         func=scrape_website,
-         description=
-         "Scrape content from a website URL. Input should be a valid URL.")
-]
+# List of available tools for the search agent
+search_agent_tools = [search_web, scrape_website]
